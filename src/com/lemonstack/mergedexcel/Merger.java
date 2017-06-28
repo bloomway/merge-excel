@@ -11,7 +11,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 
 public class Merger {
 
-	private static final String FILE_NAME = "N:\\workspace\\java-projects\\workspace\\merge-excel\\data\\merged.xls";
+	private static final String FILE_NAME = "";
 
 	public Merger() {
 	}
@@ -23,13 +23,6 @@ public class Merger {
 	public void merge(final File dir) {
 		final List<HSSFWorkbook> wbooks = getHSSFFiles(dir);
 		final AdvancedWorkBook mergedBook = new AdvancedWorkBook(FILE_NAME);
-		//HSSFWorkbook book = mergedBook.getWorkBook();
-		
-		//mergedBook.createSheet(AGENTS_NON_DECLARES);
-		//mergedBook.createSheet(AGENTS_SUJETS_ALERTES);
-		
-		//final HSSFWorkbook wbook0 = wbooks.get(0);
-		//mergedBook.addSheet(wbook0.getSheet(AGENTS_NON_DECLARES), AGENTS_NON_DECLARES);
 		
 		for(int k = 0, size = wbooks.size(); k < size; k++) {	
 			final HSSFWorkbook wbook = wbooks.get(k); // file k (= 1, 2, 3, 4)	

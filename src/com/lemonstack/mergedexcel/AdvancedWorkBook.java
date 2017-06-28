@@ -35,7 +35,6 @@ public class AdvancedWorkBook {
 			
 			final Row srcRow = srcSheet.getRow(i);
 			
-			// Si copie du 2e fichier, alors ignorez l'entete
 			// if we copy another file other than the 1st file, we skip the header
 			if (this.rowNum > 0) {
 				if (srcRow.getRowNum() == 0) {
