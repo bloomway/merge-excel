@@ -7,8 +7,12 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
 
 import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFCellStyle;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
@@ -57,6 +61,8 @@ public final class AdvancedWorkBook {
 		final HSSFSheet dstSheet = this.workBook.getSheet(sheetName);
 		final int rowNum = dstSheet.getLastRowNum();
 		
+		int maxColNum = 0;
+		
 		for(int idx = srcSheet.getFirstRowNum(); idx<= srcSheet.getLastRowNum(); idx++) {
 			final Row srcRow = srcSheet.getRow(idx);
 			
@@ -71,12 +77,15 @@ public final class AdvancedWorkBook {
 			final Row dstRow = dstSheet.createRow(rowNum + idx);
 			if (null != srcRow) {
 				copyRow(srcRow, dstRow);
+				
+				if (maxColNum < srcRow.getLastCellNum()) {
+					maxColNum = srcRow.getLastCellNum();
+				}
 			}
 			
 		}
 		
 		// apply the style from the old sheet to the new sheet
-		final int maxColNum = srcSheet.getLastRowNum();
 		for (int p = 0; p < maxColNum; p++) {
 			dstSheet.setColumnWidth(p, srcSheet.getColumnWidth(p));
 		}
@@ -84,57 +93,76 @@ public final class AdvancedWorkBook {
 	
 	/**
 	 * Copy a row 
-	 * @param srcRow source 
-	 * @param dstRow destination
+	 * @param src source 
+	 * @param dst destination
 	 */
-	private void copyRow(final Row srcRow, final Row dstRow) {
-		for (int j = srcRow.getFirstCellNum(); j <= srcRow.getLastCellNum(); j++) {
+	private void copyRow(final Row src, final Row dst) {
+		
+		dst.setHeight(src.getHeight());
+		
+		for (int j = src.getFirstCellNum(); j <= src.getLastCellNum(); j++) {
 
-			final Cell srcCell = srcRow.getCell(j);
-			Cell dstCell = dstRow.getCell(j);
+			final Cell srcCell = src.getCell(j);
+			Cell dstCell = dst.getCell(j);
 
 			if (null != srcCell) {
 				if (dstCell == null) {
-					dstCell = dstRow.createCell(j);
+					dstCell = dst.createCell(j);
 				}
 				copyCell(srcCell, dstCell);
 			}
 		}
+		CopyStyle(src, dst);
 	}
 
 	/**
 	 * Copy a cell
-	 * @param srcCell source
-	 * @param dstCell destination
+	 * @param src source
+	 * @param dst destination
 	 */
-	private void copyCell(final Cell srcCell, final Cell dstCell) {
+	private void copyCell(final Cell src, final Cell dst) {
 		
-		switch (srcCell.getCellType()) {
+		
+		switch (src.getCellType()) {
 		case HSSFCell.CELL_TYPE_FORMULA:
-			dstCell.setCellFormula(srcCell.getCellFormula());
+			dst.setCellFormula(src.getCellFormula());
 			break;
 		case HSSFCell.CELL_TYPE_NUMERIC:
-			if (DateUtil.isCellDateFormatted(srcCell)) {
-				final String dateFormatted = this.formatter.format(srcCell.getDateCellValue());
-				dstCell.setCellValue(dateFormatted);
+			if (DateUtil.isCellDateFormatted(src)) {
+				final String dateFormatted = this.formatter.format(src.getDateCellValue());
+				dst.setCellValue(dateFormatted);
 			} else {
-				dstCell.setCellValue(srcCell.getNumericCellValue());
+				dst.setCellValue(src.getNumericCellValue());
 			}
 			break;
 		case HSSFCell.CELL_TYPE_BLANK:
-			dstCell.setCellValue(srcCell.getStringCellValue());
+			dst.setCellValue(src.getStringCellValue());
 			break;
 		case HSSFCell.CELL_TYPE_BOOLEAN:
-			dstCell.setCellValue(srcCell.getBooleanCellValue());
+			dst.setCellValue(src.getBooleanCellValue());
 			break;
 		case HSSFCell.CELL_TYPE_STRING:
-			dstCell.setCellValue(srcCell.getStringCellValue());
+			dst.setCellValue(src.getStringCellValue());
 			break;
 		default:
 			break;
 		}	
 	}
 
+	private void CopyStyle(final Row src, final Row dst) {
+
+		final HSSFCellStyle dstCellStyle = (HSSFCellStyle) dst.getSheet().getWorkbook().createCellStyle();
+
+		// clone the style from one cell
+		dstCellStyle.cloneStyleFrom(src.getCell(0).getCellStyle());
+
+		// apply the same style to other cells
+		for(Iterator<Cell> it = dst.cellIterator(); it.hasNext();) {
+			final Cell cell = it.next();
+			cell.setCellStyle(dstCellStyle);
+		}
+	}
+	
 	public void writeTo(final File file) {
 		OutputStream os = null;
 		
