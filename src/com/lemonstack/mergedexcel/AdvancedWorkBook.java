@@ -5,47 +5,72 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
 import org.apache.poi.ss.usermodel.Row;
 
-public class AdvancedWorkBook {
+public final class AdvancedWorkBook {
 
 	private HSSFWorkbook workBook;
-	private String fileName;
-	private int rowNum;
+	private final SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
 	
-	public AdvancedWorkBook(String fileName) {
+	public AdvancedWorkBook() {
 		this.workBook = new HSSFWorkbook();
-		this.fileName = fileName;
 	}
 	
-	public HSSFSheet createSheet(final String sheetName) {
+	/**
+	 * Create a new sheet
+	 * @param 
+	 * 		sheetName name of the sheet
+	 * @return 
+	 * 		A new created sheet
+	 */
+	public final HSSFSheet createSheet(final String sheetName) {
 		return this.workBook.createSheet(sheetName);
 	}
 	
+	/**
+	 * Get a sheet based on his name
+	 * @param sheetName 
+	 * 			name of the sheet
+	 * @return 
+	 * 		HSSFSheet with the name provided or null if it does not exist
+	 */
+	public final HSSFSheet getSheet(final String sheetName) {
+		return this.workBook.getSheet(sheetName);
+	}
+	
+	/**
+	 * Add one sheet to another
+	 * @param srcSheet 
+	 * 		sheet from which data came from
+	 * @param sheetName 
+	 * 		name of the sheet
+	 */
 	public void addSheet(final HSSFSheet srcSheet, final String sheetName) {
-		
 		final HSSFSheet dstSheet = this.workBook.getSheet(sheetName);
+		final int rowNum = dstSheet.getLastRowNum();
 		
-		for(int i = srcSheet.getFirstRowNum(); i<= srcSheet.getLastRowNum(); i++) {
-			
-			final Row srcRow = srcSheet.getRow(i);
+		for(int idx = srcSheet.getFirstRowNum(); idx<= srcSheet.getLastRowNum(); idx++) {
+			final Row srcRow = srcSheet.getRow(idx);
 			
 			// if we copy another file other than the 1st file, we skip the header
-			if (this.rowNum > 0) {
+			if (rowNum > 0) {
+				// if the header (first line), skip it
 				if (srcRow.getRowNum() == 0) {
 					continue;
 				}
 			}
 			
-			Row dstRow = dstSheet.createRow(this.rowNum++);
+			final Row dstRow = dstSheet.createRow(rowNum + idx);
 			if (null != srcRow) {
 				copyRow(srcRow, dstRow);
-				this.rowNum++;
 			}
 			
 		}
@@ -57,8 +82,12 @@ public class AdvancedWorkBook {
 		}
 	}
 	
-	
-	private void copyRow(Row srcRow, Row dstRow) {
+	/**
+	 * Copy a row 
+	 * @param srcRow source 
+	 * @param dstRow destination
+	 */
+	private void copyRow(final Row srcRow, final Row dstRow) {
 		for (int j = srcRow.getFirstCellNum(); j <= srcRow.getLastCellNum(); j++) {
 
 			final Cell srcCell = srcRow.getCell(j);
@@ -73,14 +102,24 @@ public class AdvancedWorkBook {
 		}
 	}
 
-	private void copyCell(Cell srcCell, Cell dstCell) {
+	/**
+	 * Copy a cell
+	 * @param srcCell source
+	 * @param dstCell destination
+	 */
+	private void copyCell(final Cell srcCell, final Cell dstCell) {
 		
 		switch (srcCell.getCellType()) {
 		case HSSFCell.CELL_TYPE_FORMULA:
 			dstCell.setCellFormula(srcCell.getCellFormula());
 			break;
 		case HSSFCell.CELL_TYPE_NUMERIC:
-			dstCell.setCellValue(srcCell.getNumericCellValue());
+			if (DateUtil.isCellDateFormatted(srcCell)) {
+				final String dateFormatted = this.formatter.format(srcCell.getDateCellValue());
+				dstCell.setCellValue(dateFormatted);
+			} else {
+				dstCell.setCellValue(srcCell.getNumericCellValue());
+			}
 			break;
 		case HSSFCell.CELL_TYPE_BLANK:
 			dstCell.setCellValue(srcCell.getStringCellValue());
@@ -92,29 +131,54 @@ public class AdvancedWorkBook {
 			dstCell.setCellValue(srcCell.getStringCellValue());
 			break;
 		default:
-			dstCell.setCellValue(srcCell.getDateCellValue());
 			break;
 		}	
 	}
 
-	public void write() {
+	public void writeTo(final File file) {
 		OutputStream os = null;
+		
+		// create a destination file
+		createFile(file);
+		
 		try {
-			os = new FileOutputStream(new File(fileName));
+			os = new FileOutputStream(file);
 			this.workBook.write(os);
 			this.workBook.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e.getMessage());
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e.getMessage());
 		} finally {
 			if(null != os) {
 				try {
 					os.close();
 				} catch (IOException e) {
-					e.printStackTrace();
+					throw new RuntimeException(e.getMessage());
 				}
 			}
 		}
+	}
+
+	/**
+	 * Create a new file on the filesystem
+	 * @param file
+	 */
+	private void createFile(final File file) {
+		final File parent = file.getParentFile();
+		
+		try {
+			if (!parent.exists()) {
+				parent.mkdirs();
+			}
+			
+			if (!file.exists()) {
+				file.createNewFile();
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		
 	}
 }
