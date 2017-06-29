@@ -1,2 +1,2 @@
 # merge-excel
-Project that merged many excel files 
+merge excel files into one file. If the files has multiple sheets, it merge sheet by sheet 
