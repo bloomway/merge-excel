@@ -79,7 +79,6 @@ public final class AdvancedWorkBook {
 					maxColNum = srcRow.getLastCellNum();
 				}
 			}
-			
 		}
 		
 		// apply the style from the old sheet to the new sheet
@@ -109,7 +108,7 @@ public final class AdvancedWorkBook {
 				copyCell(srcCell, dstCell);
 			}
 		}
-		CopyStyle(src, dst);
+		copyStyle(src, dst);
 	}
 
 	/**
@@ -118,7 +117,6 @@ public final class AdvancedWorkBook {
 	 * @param dst destination
 	 */
 	private void copyCell(final Cell src, final Cell dst) {
-		
 		
 		switch (src.getCellType()) {
 		case HSSFCell.CELL_TYPE_FORMULA:
@@ -146,15 +144,14 @@ public final class AdvancedWorkBook {
 		}	
 	}
 
-	private void CopyStyle(final Row src, final Row dst) {
-
+	private void copyStyle(final Row src, final Row dst) {
 		final HSSFCellStyle dstCellStyle = (HSSFCellStyle) dst.getSheet().getWorkbook().createCellStyle();
 
 		// clone the style from one cell
 		dstCellStyle.cloneStyleFrom(src.getCell(0).getCellStyle());
 
 		// apply the same style to other cells
-		for(Iterator<Cell> it = dst.cellIterator(); it.hasNext();) {
+		for(final Iterator<Cell> it = dst.cellIterator(); it.hasNext();) {
 			final Cell cell = it.next();
 			cell.setCellStyle(dstCellStyle);
 		}
@@ -196,14 +193,11 @@ public final class AdvancedWorkBook {
 			if (!parent.exists()) {
 				parent.mkdirs();
 			}
-			
 			if (!file.exists()) {
 				file.createNewFile();
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e.getMessage());
 		}
-		
-		
 	}
 }
